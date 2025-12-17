@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Memory Flip Game</title>
+
+  <style>
+    /* =========================================================
+       BASE
+       ========================================================= */
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      color: #f3f6fb;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at top, #2a4d8f, #070a14 65%);
+      padding: 18px;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 980px;
+    }
+
+    .panel {
+      background: rgba(14, 18, 26, 0.94);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 18px;
+      box-shadow: 0 22px 50px rgba(0,0,0,0.55);
+      overflow: hidden;
+    }
+
+    /* =========================================================
+       HEADER
+       ========================================================= */
+    .header {
+      padding: 16px 18px;
+      border-bottom: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.03);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .title-wrap h1 {
+      margin: 0;
+      font-size: 22px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .title-wrap p {
+      margin: 6px 0 0;
+      font-size: 14.5px;
+      color: rgba(255,255,255,0.80);
+    }
+
+    .stats {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    .pill {
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: rgba(0,0,0,0.25);
+      border: 1px solid rgba(255,255,255,0.12);
+      font-size: 14px;
+      white-space: nowrap;
+    }
+
+    /* =========================================================
+       BUTTONS
+       ========================================================= */
+    .btn {
+      border: none;
+      border-radius: 999px;
+      padding: 9px 14px;
+      font-size: 14px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .btn-primary {
+      background: #4bb3fd;
+      color: #07101b;
+    }
+
+    .btn-primary:hover { filter: brightness(0.95); }
+
+    .btn-outline {
+      background: transparent;
+      color: #d8e9ff;
+      border: 1px solid rgba(216,233,255,0.65);
+    }
+
+    .btn-outline:hover {
+      background: rgba(216,233,255,0.10);
+    }
+
+    /* =========================================================
+       CONTENT
+       ========================================================= */
+    .content {
+      padding: 18px;
+    }
+
+    .message {
+      margin: 0 0 14px;
+      font-size: 15px;
+      color: rgba(255,255,255,0.88);
+    }
+
+    /* =========================================================
+       GRID
+       ========================================================= */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(70px, 1fr));
+      gap: 12px;
+    }
+
+    .card {
+      position: relative;
+      width: 100%;
+      padding-top: 100%;
+      perspective: 900px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .card-inner {
+      position: absolute;
+      inset: 0;
+      border-radius: 14px;
+      transform-style: preserve-3d;
+      transition: transform 0.4s ease;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(0,0,0,0.25);
+    }
+
+    .card-face {
+      position: absolute;
+      inset: 0;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backface-visibility: hidden;
+      font-size: 32px;
+    }
+
+    .front {
+      background: linear-gradient(145deg, #121b2d, #1f293b);
+      font-size: 22px;
+      font-weight: 800;
+    }
+
+    .back {
+      transform: rotateY(180deg);
+      background: radial-gradient(circle at top, #4bb3fd, #2f9be5);
+      color: #07101b;
+    }
+
+    .flipped .card-inner {
+      transform: rotateY(180deg);
+    }
+
+    .matched .card-inner {
+      box-shadow: 0 0 0 2px #4bb3fd;
+    }
+
+    /* =========================================================
+       FOOTER LINKS
+       ========================================================= */
+    .footer-links {
+      margin-top: 16px;
+      text-align: center;
+      font-size: 14.5px;
+      color: rgba(255,255,255,0.80);
+    }
+
+    .footer-links a {
+      color: #9fd0ff;
+      text-decoration: none;
+    }
+
+    .footer-links a:hover { text-decoration: underline; }
+
+    .sep {
+      margin: 0 12px;
+      color: rgba(255,255,255,0.45);
+    }
+
+    /* =========================================================
+       WIN MODAL
+       ========================================================= */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.65);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal {
+      background: rgba(14,18,26,0.96);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 18px;
+      padding: 22px 24px;
+      max-width: 420px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.6);
+    }
+
+    .modal h2 {
+      margin: 0 0 10px;
+      font-size: 22px;
+    }
+
+    .modal p {
+      margin: 0 0 18px;
+      font-size: 15.5px;
+      color: rgba(255,255,255,0.88);
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    /* =========================================================
+       RESPONSIVE
+       ========================================================= */
+    @media (max-width: 560px) {
+      .grid {
+        grid-template-columns: repeat(3, minmax(70px, 1fr));
+      }
+      .title-wrap h1 { font-size: 18px; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+    <div class="panel">
+
+      <div class="header">
+        <div class="title-wrap">
+          <h1>Memory Flip Game</h1>
+          <p>Match all pairs in as few moves as possible.</p>
+        </div>
+
+        <div class="stats">
+          <span class="pill">Moves: <span id="moves">0</span></span>
+          <span class="pill">Matches: <span id="matches">0</span>/8</span>
+          <button class="btn btn-primary" id="newGameBtn">New Game</button>
+          <button class="btn btn-outline" id="homeBtn">Home</button>
+        </div>
+      </div>
+
+      <div class="content">
+        <p class="message" id="message">Click any card to begin.</p>
+
+        <div class="grid" id="grid"></div>
+
+        <div class="footer-links">
+          <a href="../index.html">Home Page</a>
+          <span class="sep">|</span>
+          <a href="../html/BusComp.html">Business Competitions Page</a>
+          <span class="sep">|</span>
+          <a href="../html/Resume.html">Resume Page</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Win Message -->
+  <div id="winModal" class="modal-overlay">
+    <div class="modal">
+      <h2>🎉 Congratulations!</h2>
+      <p id="winMessage"></p>
+      <div class="modal-actions">
+        <button class="btn btn-primary" id="playAgainBtn">Start New Game</button>
+        <button class="btn btn-outline" id="closeModalBtn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const ICONS = ["💼","📊","📈","🧮","💻","🌎","📚","🤝"];
+    const grid = document.getElementById("grid");
+    const movesEl = document.getElementById("moves");
+    const matchesEl = document.getElementById("matches");
+    const messageEl = document.getElementById("message");
+
+    const winModal = document.getElementById("winModal");
+    const winMessage = document.getElementById("winMessage");
+    const playAgainBtn = document.getElementById("playAgainBtn");
+    const closeModalBtn = document.getElementById("closeModalBtn");
+
+    let first = null;
+    let second = null;
+    let lock = false;
+    let moves = 0;
+    let matches = 0;
+
+    function shuffle(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    function newGame() {
+      grid.innerHTML = "";
+      first = second = null;
+      lock = false;
+      moves = 0;
+      matches = 0;
+      movesEl.textContent = "0";
+      matchesEl.textContent = "0";
+      messageEl.textContent = "Click any card to begin.";
+      winModal.classList.remove("active");
+
+      const deck = shuffle([...ICONS, ...ICONS]);
+
+      deck.forEach(symbol => {
+        const card = document.createElement("div");
+        card.className = "card";
+
+        const inner = document.createElement("div");
+        inner.className = "card-inner";
+
+        const front = document.createElement("div");
+        front.className = "card-face front";
+        front.textContent = "?";
+
+        const back = document.createElement("div");
+        back.className = "card-face back";
+        back.textContent = symbol;
+
+        inner.append(front, back);
+        card.append(inner);
+
+        card.addEventListener("click", () => flip(card, symbol));
+
+        grid.append(card);
+      });
+    }
+
+    function flip(card, symbol) {
+      if (lock || card === first || card.classList.contains("matched")) return;
+
+      card.classList.add("flipped");
+
+      if (!first) {
+        first = card;
+        return;
+      }
+
+      second = card;
+      moves++;
+      movesEl.textContent = moves;
+
+      if (symbol === first.querySelector(".back").textContent) {
+        first.classList.add("matched");
+        second.classList.add("matched");
+        first = second = null;
+        matches++;
+        matchesEl.textContent = matches;
+
+        if (matches === ICONS.length) {
+          winMessage.textContent = `You completed the game in ${moves} moves.`;
+          winModal.classList.add("active");
+        }
+      } else {
+        lock = true;
+        setTimeout(() => {
+          first.classList.remove("flipped");
+          second.classList.remove("flipped");
+          first = second = null;
+          lock = false;
+        }, 900);
+      }
+    }
+
+    playAgainBtn.addEventListener("click", () => newGame());
+    closeModalBtn.addEventListener("click", () => winModal.classList.remove("active"));
+    document.getElementById("newGameBtn").addEventListener("click", () => newGame());
+    document.getElementById("homeBtn").addEventListener("click", () => window.location.href = "../index.html");
+
+    newGame();
+  </script>
+</body>
+</html>
